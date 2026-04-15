@@ -3,16 +3,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.integrate import quad
 
-# 1. Parameter Space Setup
+# Parameter Space Setup
 resolution = 50
 f_bio_log = np.linspace(-8, -3, resolution)
 L_log = np.linspace(3, 7, resolution)
 heatmap_data = np.zeros((resolution, resolution))
 
-# 2. The Rigorous Spatiotemporal Math
+# The Spatiotemporal Math
 t_present = 13.6e9
 
-# UPGRADE 1: Hypoexponential Biological Delay
+# Hypoexponential Biological Delay
 lambda_rates = np.array([1/0.5e9, 1/0.7e9, 1/0.9e9, 1/1.1e9, 1/1.3e9])
 n_steps = len(lambda_rates)
 
@@ -44,7 +44,7 @@ def integrand(tau):
 N_safe_avg = 5e8 # Mean of prior for deterministic plot
 V_GHZ = 2.5e11
 
-# UPGRADE 2: Dynamic Concurrency (Fixed)
+# Dynamic Concurrency
 # Calculate E_present ONCE outside the loops to save processing time
 E_present, _ = quad(integrand, 0, t_present)
 
@@ -56,7 +56,7 @@ for i, l_val in enumerate(L_log):
         # Calculate concurrent civilizations
         N_concurrent = N_safe_avg * f_bio * E_present * L
 
-        # UPGRADE 3: Relativistic Light Shell Volume
+        # Relativistic Light Shell Volume
         R_eff = np.minimum(L, 1000)
         V_shell = (4/3) * np.pi * (R_eff**3)
         P_spatial = V_shell / V_GHZ
