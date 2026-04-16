@@ -81,8 +81,14 @@ plt.xlabel('Biological Bottleneck (Log10 f_bio)', fontsize=14)
 plt.ylabel('Communicative Lifespan (Log10 L in years)', fontsize=14)
 plt.title('Sensitivity Space: Probability of Spatiotemporal Contact', fontsize=16, pad=20)
 
+# Draw the 50% probability boundary line
 plt.contour(heatmap_data, levels=[0.5], colors='white', linestyles='dashed', linewidths=2)
-plt.text(5, 30, 'Spatiotemporal Isolation\nAbsolute Dominance', color='white', fontsize=12, alpha=0.8)
+
+# Label the isolation zone
+plt.text(5, 32, 'Spatiotemporal Isolation\nAbsolute Dominance', color='white', fontsize=12, alpha=0.8)
+
+# NEW: Add the explicit mathematical threshold
+plt.text(5, 29, r'Contact Threshold: $f_{bio} \times L \approx 1,271$', color='white', fontsize=11, alpha=0.9, style='italic')
 
 plt.tight_layout()
 plt.savefig('spatiotemporal_heatmap_upgraded.png', dpi=300)
