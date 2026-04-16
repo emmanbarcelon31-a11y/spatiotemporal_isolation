@@ -3,12 +3,8 @@ import matplotlib.pyplot as plt
 from scipy.integrate import quad
 
 # ==========================================
-# --- NEW: Evolutionary Timeline Setting ---
+# --- Evolutionary Timeline Setting ---
 # ==========================================
-# Change this value to test different biological wait times:
-# 4.5 = Earth-like (Standard Model)
-# 8.0 = M-Dwarf (Slow Evolution)
-# 2.0 = Optimistic (Fast Evolution)
 TARGET_EVOLUTION_GYR = 8.0
 
 # 1. Variables and Log-uniform priors
@@ -29,7 +25,6 @@ t_present = 13.6e9
 
 # 2. The Rigorous Spatiotemporal Math
 
-# --- UPGRADED: Dynamic Hypoexponential Biological Delay ---
 def generate_lambda_rates(target_gyr):
     """Scales the 'Hard Step' rates to hit a specific expected total wait time."""
     base_times_gyr = np.array([0.5, 0.7, 0.9, 1.1, 1.3])
@@ -37,7 +32,6 @@ def generate_lambda_rates(target_gyr):
     scaled_times_yr = (base_times_gyr * scaling_factor) * 1e9
     return 1.0 / scaled_times_yr
 
-# Generate rates based on the chosen target timeline
 lambda_rates = generate_lambda_rates(TARGET_EVOLUTION_GYR)
 n_steps = len(lambda_rates)
 
@@ -52,7 +46,6 @@ def p_hypoexponential(delta_t):
         prob += C_i * lambda_rates[i] * np.exp(-lambda_rates[i] * delta_t)
     return prob
 
-# Star Formation Rate: Parametrized Snaith et al. (Peaks at 7 Gyr)
 def sfr_shape(tau):
     a = 2.8
     b = a / 7.0e9
@@ -70,23 +63,29 @@ def integrand(tau):
 E_present, _ = quad(integrand, 0, t_present)
 N_concurrent = N_safe * f_bio * E_present * L
 
-# --- STATIONARY BOUNDARY ---
-R_outer_stat = np.minimum(c * L, R_eff_prior)
-R_inner_stat = np.maximum(0, R_outer_stat - c * L)
+# --- CORRECTED STATIONARY BOUNDARY ---
+# A concurrent civilization is currently at some random age between 0 and L
+t_age = np.random.uniform(0, L)
+
+# The outer edge of the signal has been traveling for t_age
+R_outer_stat = np.minimum(c * t_age, R_eff_prior)
+
+# Because they are concurrent (still alive and broadcasting), the inner radius is exactly 0 
+R_inner_stat = np.zeros(n_sims)
 
 V_shell_stat = (4/3) * np.pi * (R_outer_stat**3 - R_inner_stat**3)
 V_GHZ = 2.5e11
-V_shell_stat = np.minimum(V_shell_stat, V_GHZ) # Cap volume to galaxy size
+V_shell_stat = np.minimum(V_shell_stat, V_GHZ) 
 P_spatial_stat = V_shell_stat / V_GHZ
 
 # Calculate STATIONARY Expected Contacts
 N_contact_stat = N_concurrent * P_spatial_stat
 
-# --- SUB-LIGHT EXPANSION CAVEAT TEST ---
-# v_exp is fractional c; L is in years; so R_col is in light-years
-R_col = v_exp * L
-R_outer_exp = R_col + np.minimum(c * L, R_eff_prior)
-R_inner_exp = np.maximum(0, R_outer_exp - c * L)
+# --- CORRECTED SUB-LIGHT EXPANSION TEST ---
+# Expansion bubble only grows for the current age (t_age)
+R_col = v_exp * t_age
+R_outer_exp = R_col + np.minimum(c * t_age, R_eff_prior)
+R_inner_exp = np.zeros(n_sims)
 
 V_shell_exp = (4/3) * np.pi * (R_outer_exp**3 - R_inner_exp**3)
 V_shell_exp = np.minimum(V_shell_exp, V_GHZ)
@@ -115,17 +114,15 @@ log_N_contact_exp[valid_exp] = np.log10(N_contact_exp[valid_exp])
 # 3. Plotting
 plt.figure(figsize=(10,6))
 
-# Plot the original Stationary Histogram
 bins = np.linspace(-10, np.max(log_N_contact_stat), 100)
 counts, bins, patches = plt.hist(log_N_contact_stat, bins=bins, edgecolor='black', alpha=0.85, label='Stationary Civs')
 
 for patch, bin_left in zip(patches, bins[:-1]):
     if bin_left < 0:
-        patch.set_facecolor('darkslateblue') # Isolation
+        patch.set_facecolor('darkslateblue')
     else:
-        patch.set_facecolor('darkorange') # Contact
+        patch.set_facecolor('darkorange')
 
-# Overlay the Expanding Histogram
 plt.hist(log_N_contact_exp, bins=bins, histtype='step', color='red', linewidth=2, linestyle='dotted', label='Expanding Civs (v = 0.0001c to 0.01c)')
 
 plt.axvline(x=0, color='red', linestyle='-', linewidth=2.5, label='Contact Boundary (N >= 1)')
@@ -135,12 +132,11 @@ plt.ylabel('Frequency (10^6 Simulations)', fontsize=13)
 plt.legend(fontsize=11, loc='upper left')
 plt.grid(axis='y', alpha=0.33)
 
-# Add text box for the percentages
 info_text = (f"Evolution Target: {TARGET_EVOLUTION_GYR} Gyr\n"
              f"Stationary Isolation: {prob_isolation_stat:.3f}%\n"
              f"Expanding Isolation: {prob_isolation_exp:.3f}%")
 plt.figtext(0.65, 0.45, info_text, fontsize=12, bbox=dict(facecolor='white', edgecolor='black', alpha=0.9))
 
 plt.tight_layout()
-plt.savefig(f'spatiotemporal_histogram_{TARGET_EVOLUTION_GYR}Gyr.png', dpi=300)
+plt.savefig(f'histogram.png', dpi=300)
 plt.show()
