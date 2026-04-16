@@ -14,10 +14,8 @@ f_bio_log = np.linspace(-8, -3, resolution)
 L_log = np.linspace(3, 7, resolution)
 heatmap_data = np.zeros((resolution, resolution))
 
-# The Spatiotemporal Math
 t_present = 13.6e9
 
-# --- Dynamic Hypoexponential Scaling ---
 def generate_lambda_rates(target_gyr):
     base_times_gyr = np.array([0.5, 0.7, 0.9, 1.1, 1.3])
     scaling_factor = target_gyr / np.sum(base_times_gyr)
@@ -54,14 +52,10 @@ def integrand(tau):
 # Spatial Constants
 N_safe_avg = 5e8
 V_GHZ = 2.5e11
-
-# Calculate E_present for the new target timeline
 E_present, _ = quad(integrand, 0, t_present)
 
-# Calculate NEW algebraic threshold for the text label
-# N_contact = N_safe * f_bio * E_present * L * P_spatial = 1
-# P_spatial for 1000ly radius is (4/3 * pi * 1000^3) / 2.5e11
-V_shell_fixed = (4/3) * np.pi * (1000**3)
+# Calculate NEW algebraic threshold using average broadcast age (1000/2)
+V_shell_fixed = (4/3) * np.pi * ((1000/2)**3)
 P_spatial_fixed = V_shell_fixed / V_GHZ
 new_threshold = 1 / (N_safe_avg * E_present * P_spatial_fixed)
 
@@ -70,7 +64,8 @@ for i, l_val in enumerate(L_log):
         L = 10 ** l_val
         f_bio = 10 ** f_val
         N_concurrent = N_safe_avg * f_bio * E_present * L
-        R_eff = np.minimum(L, 1000)
+        # Use L/2 to represent the average current age of the broadcast
+        R_eff = np.minimum(L/2, 1000) 
         V_shell = (4/3) * np.pi * (R_eff**3)
         P_spatial = V_shell / V_GHZ
         N_contact = N_concurrent * P_spatial
@@ -97,4 +92,5 @@ plt.text(5, 32, 'Spatiotemporal Isolation\nAbsolute Dominance', color='white', f
 plt.text(5, 29, f'Contact Threshold: f_bio x L ≈ {new_threshold:,.0f}', color='white', fontsize=11, alpha=0.9, style='italic')
 
 plt.tight_layout()
+plt.savefig('heatmap.png', dpi=300)
 plt.show()
