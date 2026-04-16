@@ -3,16 +3,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.integrate import quad
 
-# 1. Parameter Space Setup
+# 1. Parameter Space Setup (Updated for 2026 Consensus)
 resolution = 50
-f_bio_log = np.linspace(-8, -3, resolution)
+f_bio_log = np.linspace(-15, -2, resolution) # Expanded range to match Monte Carlo
 L_log = np.linspace(3, 7, resolution)
 heatmap_data = np.zeros((resolution, resolution))
 
 # 2. The Rigorous Spatiotemporal Math
 t_present = 13.6e9
 
-# UPGRADE 1: Hypoexponential Biological Delay
+# Hypoexponential Biological Delay
 lambda_rates = np.array([1/0.5e9, 1/0.7e9, 1/0.9e9, 1/1.1e9, 1/1.3e9])
 n_steps = len(lambda_rates)
 
@@ -40,12 +40,11 @@ def sfr_normalized(tau):
 def integrand(tau):
     return sfr_normalized(tau) * p_hypoexponential(t_present - tau)
 
-# Spatial Constants
-N_safe_avg = 5e8 # Mean of prior for deterministic plot
-V_GHZ = 2.5e11
+# Spatial Constants (Updated 2026 Boundaries)
+N_safe_avg = 2e10 # Median of the [10^9, 4e10] range
+V_GHZ = 7.8e12  # Updated modern 3D volume
 
-# UPGRADE 2: Dynamic Concurrency (Fixed)
-# Calculate E_present ONCE outside the loops to save processing time
+# Calculate E_present once
 E_present, _ = quad(integrand, 0, t_present)
 
 for i, l_val in enumerate(L_log):
@@ -56,8 +55,8 @@ for i, l_val in enumerate(L_log):
         # Calculate concurrent civilizations
         N_concurrent = N_safe_avg * f_bio * E_present * L
 
-        # UPGRADE 3: Relativistic Light Shell Volume
-        R_eff = np.minimum(L, 1000)
+        # Relativistic Light Shell Volume (2026 Leakage Limit)
+        R_eff = np.minimum(L, 200) # Capped at 200 ly median for unintentional leakage
         V_shell = (4/3) * np.pi * (R_eff**3)
         P_spatial = V_shell / V_GHZ
 
@@ -79,11 +78,12 @@ plt.yticks(np.arange(0, resolution, 10), np.round(L_log[::10], 1))
 
 plt.xlabel('Biological Bottleneck (Log10 f_bio)', fontsize=14)
 plt.ylabel('Communicative Lifespan (Log10 L in years)', fontsize=14)
-plt.title('Sensitivity Space: Probability of Spatiotemporal Contact', fontsize=16, pad=20)
+plt.title('Sensitivity Space: 2026 Spatiotemporal Contact Probability', fontsize=16, pad=20)
 
+# The "Isolation Zone" is now so large the contour might barely show at the top right
 plt.contour(heatmap_data, levels=[0.5], colors='white', linestyles='dashed', linewidths=2)
-plt.text(5, 30, 'Spatiotemporal Isolation\nAbsolute Dominance', color='white', fontsize=12, alpha=0.8)
+plt.text(5, 20, 'Spatiotemporal Isolation\nAbsolute Dominance', color='white', fontsize=14, alpha=0.9)
 
 plt.tight_layout()
-plt.savefig('spatiotemporal_heatmap_upgraded.png', dpi=300)
+plt.savefig('heatmap.png', dpi=300)
 plt.show()
