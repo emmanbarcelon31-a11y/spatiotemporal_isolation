@@ -5,8 +5,8 @@ from scipy.integrate import quad
 # 1. Variables and Log-uniform priors (Updated 2026 Boundaries)
 n_sims = 1000000
 
-# N_safe: 10^9 to 4x10^10 (Includes M-dwarf systems)
-N_safe = 10 ** np.random.uniform(9, np.log10(4e10), n_sims)
+# N_safe: 10^8 to 4x10^9 (Includes M-dwarf systems)
+N_safe = 10 ** np.random.uniform(8, np.log10(4e9), n_sims)
 
 # f_bio: 10^-15 to 10^-2 (Broad PDF for "Rare Earth" inclusion)
 f_bio = 10 ** np.random.uniform(-15, -2, n_sims)
