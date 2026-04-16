@@ -41,7 +41,7 @@ def integrand(tau):
     return sfr_normalized(tau) * p_hypoexponential(t_present - tau)
 
 # Spatial Constants (Updated 2026 Boundaries)
-N_safe_avg = 2e10 # Median of the [10^9, 4e10] range
+N_safe_avg = 5e8
 V_GHZ = 7.8e12  # Updated modern 3D volume
 
 # Calculate E_present once
