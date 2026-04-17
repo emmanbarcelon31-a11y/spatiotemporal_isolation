@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad
 
-# 1. Variables and Log-uniform priors (Updated 2026 Boundaries)
+# 1. Variables and Log-uniform priors (Updated with Randomized Bio Timer)
 n_sims = 1000000
 
-# N_safe: 10^8 to 4x10^9 (Includes M-dwarf systems)
+# N_safe: 10^8 to 4x10^9 (G and K-dwarfs only)
 N_safe = 10 ** np.random.uniform(8, np.log10(4e9), n_sims)
 
 # f_bio: 10^-15 to 10^-2 (Broad PDF for "Rare Earth" inclusion)
@@ -20,22 +20,28 @@ R_eff_limit = 10 ** np.random.uniform(2, np.log10(300), n_sims)
 # Expansion Speed Prior (0.0001c to 0.01c)
 v_exp = 10 ** np.random.uniform(-4, -2, n_sims)
 
+# NEW PRIOR: Random Biological Speed Factor (0.2x to 2.0x Earth Speed)
+# 1.0 = Earth's 4.5 Gyr. 2.0 = 2.25 Gyr. 0.2 = 22.5 Gyr.
+bio_speed_factor = np.random.uniform(0.2, 2.0, n_sims)
+
 # 2. The Rigorous Spatiotemporal Math
 t_present = 13.6e9
 
-# Hypoexponential Biological Delay
-lambda_rates = np.array([1/0.5e9, 1/0.7e9, 1/0.9e9, 1/1.1e9, 1/1.3e9])
-n_steps = len(lambda_rates)
+# Base Hypoexponential Biological Delay (Earth-like = 4.5 Gyr)
+base_lambda_rates = np.array([1/0.5e9, 1/0.7e9, 1/0.9e9, 1/1.1e9, 1/1.3e9])
+n_steps = len(base_lambda_rates)
 
-def p_hypoexponential(delta_t):
+# Scaled probability function
+def p_hypoexponential_scaled(delta_t, speed_mult):
     if delta_t < 0: return 0
+    rates = base_lambda_rates * speed_mult
     prob = 0
     for i in range(n_steps):
         C_i = 1.0
         for j in range(n_steps):
             if i != j:
-                C_i *= lambda_rates[j] / (lambda_rates[j] - lambda_rates[i])
-        prob += C_i * lambda_rates[i] * np.exp(-lambda_rates[i] * delta_t)
+                C_i *= rates[j] / (rates[j] - rates[i])
+        prob += C_i * rates[i] * np.exp(-rates[i] * delta_t)
     return prob
 
 # Star Formation Rate
@@ -48,12 +54,22 @@ sfr_norm, _ = quad(sfr_shape, 0, t_present)
 def sfr_normalized(tau):
     return sfr_shape(tau) / sfr_norm
 
-def integrand(tau):
-    return sfr_normalized(tau) * p_hypoexponential(t_present - tau)
+# PRE-COMPUTE GRID: To prevent 1,000,000 integrals from crashing the computer,
+# we calculate 100 points and interpolate the rest.
+grid_speeds = np.linspace(0.2, 2.0, 100)
+grid_E_present = []
+
+for speed in grid_speeds:
+    def integrand(tau):
+        return sfr_normalized(tau) * p_hypoexponential_scaled(t_present - tau, speed)
+    E_val, _ = quad(integrand, 0, t_present)
+    grid_E_present.append(E_val)
+
+# Fast interpolation for all 1,000,000 simulations
+E_present_array = np.interp(bio_speed_factor, grid_speeds, grid_E_present)
 
 # Dynamic Concurrency
-E_present, _ = quad(integrand, 0, t_present)
-N_concurrent = N_safe * f_bio * E_present * L
+N_concurrent = N_safe * f_bio * E_present_array * L
 
 # Relativistic Light Shell Volume (STATIONARY BOUNDARY)
 R_eff_stat = np.minimum(L, R_eff_limit)
@@ -89,7 +105,7 @@ print(f"Expanding Isolation: {prob_isolation_exp:.3f}%")
 plt.figure(figsize=(10,6))
 
 # Plot the original Stationary Histogram
-counts, bins, patches = plt.hist(log_N_contact_stat, bins=100, edgecolor='black', alpha=0.85, label='Stationary Civs (2026 Priors)')
+counts, bins, patches = plt.hist(log_N_contact_stat, bins=100, edgecolor='black', alpha=0.85, label='Stationary Civs (Random Bio-Timer)')
 
 for patch, bin_left in zip(patches, bins[:-1]):
     if bin_left < 0:
@@ -101,16 +117,15 @@ for patch, bin_left in zip(patches, bins[:-1]):
 plt.hist(log_N_contact_exp, bins=bins, histtype='step', color='red', linewidth=2, linestyle='dotted', label='Expanding Civs (v = 0.0001c to 0.01c)')
 
 plt.axvline(x=0, color='red', linestyle='-', linewidth=2.5, label='Contact Boundary (N >= 1)')
-plt.title('Monte Carlo: Expected Spatiotemporal Contacts', fontsize=15, pad=15)
+plt.title('Monte Carlo: Expected Spatiotemporal Contacts (Variable Bio-Timer)', fontsize=15, pad=15)
 plt.xlabel('Log10(N_contact)', fontsize=13)
 plt.ylabel('Frequency (10^6 Simulations)', fontsize=13)
-plt.legend(fontsize=11, loc='upper right') # Moved legend to top right so it doesn't block the new graph
+plt.legend(fontsize=11, loc='upper right')
 plt.grid(axis='y', alpha=0.33)
 
 # Add a text box comparing the two percentages
 info_text = (f"Stationary Isolation: {prob_isolation_stat:.3f}%\n"
              f"Expanding Isolation: {prob_isolation_exp:.3f}%")
-# Moved text box to the left side since the data shifted left
 plt.figtext(0.15, 0.5, info_text, fontsize=12, bbox=dict(facecolor='white', edgecolor='black', alpha=0.9))
 
 plt.tight_layout()
