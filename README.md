@@ -1,2 +1,2 @@
-# spatiotemporal_isolation
-Python simulation codes for the spatiotemporal isolation constraint.
+# The Spatiotemporal Isolation Constraint: A New Look at the Fermi Paradox
+Python simulation codes and figures for the spatiotemporal isolation constraint.
